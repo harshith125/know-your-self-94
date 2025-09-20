@@ -7,6 +7,7 @@ import { Brain, ArrowLeft, Download, Mail, Share2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
+import PersonalityChart from "@/components/PersonalityChart";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 
 interface AssessmentResult {
@@ -17,6 +18,12 @@ interface AssessmentResult {
   description: string;
   recommendations: string[];
   user_id: string;
+  detailed_scores?: {
+    extroversion: number;
+    introversion: number;
+    thinking: number;
+    feeling: number;
+  };
 }
 
 const Results = () => {
@@ -88,8 +95,22 @@ const Results = () => {
 
     setIsGeneratingPDF(true);
     try {
+      // Capture the results content as an image
+      const element = document.getElementById('results-content');
+      if (!element) throw new Error('Results content not found');
+      
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff'
+      });
+      
+      const imgData = canvas.getDataURL('image/png');
+      
       const pdf = new jsPDF();
       const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
       const margin = 20;
       let yPosition = margin;
 
@@ -123,6 +144,24 @@ const Results = () => {
       pdf.text(`Overall Score: ${result.score}%`, margin, yPosition);
       yPosition += 20;
 
+      // Add scores if available
+      if (result.detailed_scores) {
+        pdf.setFontSize(14);
+        pdf.setTextColor(88, 28, 135);
+        pdf.text("Detailed Scores", margin, yPosition);
+        yPosition += 15;
+        
+        pdf.setFontSize(11);
+        pdf.setTextColor(0, 0, 0);
+        pdf.text(`Extroversion: ${result.detailed_scores.extroversion}%`, margin, yPosition);
+        yPosition += 8;
+        pdf.text(`Introversion: ${result.detailed_scores.introversion}%`, margin + 80, yPosition - 8);
+        pdf.text(`Thinking: ${result.detailed_scores.thinking}%`, margin, yPosition);
+        yPosition += 8;
+        pdf.text(`Feeling: ${result.detailed_scores.feeling}%`, margin + 80, yPosition - 8);
+        yPosition += 15;
+      }
+
       // Description
       pdf.setFontSize(14);
       pdf.setTextColor(88, 28, 135);
@@ -150,6 +189,19 @@ const Results = () => {
         yPosition += recLines.length * 5 + 5;
       });
 
+      // Add chart image if there's space, otherwise add a new page
+      if (yPosition + 100 > pageHeight - margin) {
+        pdf.addPage();
+        yPosition = margin;
+      }
+      
+      // Add the captured image
+      const imgWidth = pageWidth - 2 * margin;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      if (imgHeight <= pageHeight - yPosition - margin) {
+        pdf.addImage(imgData, 'PNG', margin, yPosition, imgWidth, imgHeight);
+      }
       // Save PDF
       pdf.save(`personality-assessment-${userProfile.full_name.replace(/\s+/g, '-')}.pdf`);
       
@@ -182,7 +234,8 @@ const Results = () => {
           score: result.score,
           description: result.description,
           recommendations: result.recommendations,
-          assessmentDate: new Date(result.created_at).toLocaleDateString()
+          assessmentDate: new Date(result.created_at).toLocaleDateString(),
+          detailedScores: result.detailed_scores
         }
       });
 
@@ -293,6 +346,14 @@ const Results = () => {
               </CardDescription>
             </CardHeader>
           </Card>
+
+          {/* Chart Visualization */}
+          {result.detailed_scores && (
+            <PersonalityChart 
+              scores={result.detailed_scores} 
+              personalityType={result.level}
+            />
+          )}
 
           {/* Description Card */}
           <Card>

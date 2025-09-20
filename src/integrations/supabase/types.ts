@@ -19,6 +19,7 @@ export type Database = {
           answers: Json
           created_at: string
           description: string
+          detailed_scores: Json | null
           id: string
           level: string
           recommendations: string[]
@@ -29,6 +30,7 @@ export type Database = {
           answers: Json
           created_at?: string
           description: string
+          detailed_scores?: Json | null
           id?: string
           level: string
           recommendations: string[]
@@ -39,6 +41,7 @@ export type Database = {
           answers?: Json
           created_at?: string
           description?: string
+          detailed_scores?: Json | null
           id?: string
           level?: string
           recommendations?: string[]

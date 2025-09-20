@@ -176,8 +176,14 @@ const Test = () => {
       scores[answer.category as keyof typeof scores] += answer.value;
     });
 
-    const extroversionScore = Math.round((scores.extroversion / (scores.extroversion + scores.introversion)) * 100);
-    const thinkingScore = Math.round((scores.thinking / (scores.thinking + scores.feeling)) * 100);
+    // Calculate percentages for each trait
+    const totalExtroIntro = scores.extroversion + scores.introversion;
+    const totalThinkFeel = scores.thinking + scores.feeling;
+    
+    const extroversionScore = totalExtroIntro > 0 ? Math.round((scores.extroversion / totalExtroIntro) * 100) : 50;
+    const introversionScore = totalExtroIntro > 0 ? Math.round((scores.introversion / totalExtroIntro) * 100) : 50;
+    const thinkingScore = totalThinkFeel > 0 ? Math.round((scores.thinking / totalThinkFeel) * 100) : 50;
+    const feelingScore = totalThinkFeel > 0 ? Math.round((scores.feeling / totalThinkFeel) * 100) : 50;
     
     let personalityType = "";
     let description = "";
@@ -236,7 +242,15 @@ const Test = () => {
       recommendations,
       overallScore: Math.round((extroversionScore + thinkingScore) / 2),
       extroversionScore,
-      thinkingScore
+      introversionScore,
+      thinkingScore,
+      feelingScore,
+      detailedScores: {
+        extroversion: extroversionScore,
+        introversion: introversionScore,
+        thinking: thinkingScore,
+        feeling: feelingScore
+      }
     };
   };
 
@@ -255,7 +269,8 @@ const Test = () => {
           answers: answers,
           description: results.description,
           recommendations: results.recommendations,
-          level: results.personalityType
+          level: results.personalityType,
+          detailed_scores: results.detailedScores
         })
         .select()
         .single();

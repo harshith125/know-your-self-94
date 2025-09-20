@@ -17,6 +17,12 @@ interface PersonalityReportRequest {
   description: string;
   recommendations: string[];
   assessmentDate: string;
+  detailedScores?: {
+    extroversion: number;
+    introversion: number;
+    thinking: number;
+    feeling: number;
+  };
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -33,7 +39,8 @@ const handler = async (req: Request): Promise<Response> => {
       score,
       description,
       recommendations,
-      assessmentDate
+      assessmentDate,
+      detailedScores
     }: PersonalityReportRequest = await req.json();
 
     console.log("Sending personality report to:", email);
@@ -42,6 +49,15 @@ const handler = async (req: Request): Promise<Response> => {
       .map((rec, index) => `${index + 1}. ${rec}`)
       .join('\n');
 
+    const scoresSection = detailedScores ? `
+      <h3 style="color: #8B5CF6;">Detailed Trait Scores</h3>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: #F1F5F9; padding: 15px; border-radius: 6px; margin: 15px 0;">
+        <div><strong>Extroversion:</strong> ${detailedScores.extroversion}%</div>
+        <div><strong>Introversion:</strong> ${detailedScores.introversion}%</div>
+        <div><strong>Thinking:</strong> ${detailedScores.thinking}%</div>
+        <div><strong>Feeling:</strong> ${detailedScores.feeling}%</div>
+      </div>
+    ` : '';
     const emailResponse = await resend.emails.send({
       from: "PersonalityTest <onboarding@resend.dev>",
       to: [email],
@@ -66,6 +82,8 @@ const handler = async (req: Request): Promise<Response> => {
             
             <h3 style="color: #8B5CF6;">Your Personality Profile</h3>
             <p style="background: #F1F5F9; padding: 15px; border-radius: 6px; margin: 15px 0;">${description}</p>
+            
+            ${scoresSection}
             
             <h3 style="color: #8B5CF6;">Personalized Recommendations</h3>
             <div style="background: #F1F5F9; padding: 15px; border-radius: 6px; margin: 15px 0;">
